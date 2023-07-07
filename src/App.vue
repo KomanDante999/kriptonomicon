@@ -223,11 +223,9 @@ export default {
       );
     },
     selection(ticker) {
-      this.select = ticker;
+      this.sel = ticker;
       this.graf = [];
     },
   },
 };
 </script>
-
-<style src="./app.css"></style>
