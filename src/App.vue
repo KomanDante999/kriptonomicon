@@ -42,29 +42,14 @@
                 placeholder="Например DOGE"
               />
             </div>
-            <div
-              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
-            >
-              <span
+            <div class="flex bg-white shadow-md p-1 rounded-md flex-wrap">
+              <button
+                v-for="coin in matchesFound"
+                :key="coin.id"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
-              </span>
+                {{ coin.name }}
+              </button>
             </div>
             <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
           </div>
@@ -187,6 +172,10 @@ export default {
       tickers: [],
       sel: null,
       graf: [],
+      listAvailableCoins: [],
+      matchesFound: [],
+      API_KEY:
+        "c5830f5e427fa14670e0d35f1fd17a70a42551bac738247d2bb81ed27a20b5ae",
     };
   },
   methods: {
@@ -198,7 +187,7 @@ export default {
       this.tickers.push(currentTicker);
       setInterval(async () => {
         const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=c5830f5e427fa14670e0d35f1fd17a70a42551bac738247d2bb81ed27a20b5ae`
+          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${this.API_KEY}`
         );
         const data = await f.json();
         // console.log(data);
@@ -226,6 +215,34 @@ export default {
       this.sel = ticker;
       this.graf = [];
     },
+    loadAvailableCoins() {
+      setTimeout(async () => {
+        const request = await fetch(
+          `https://min-api.cryptocompare.com/data/blockchain/list?api_key=${this.API_KEY}`
+        );
+        const response = await request.json();
+        this.listAvailableCoins = Object.keys(response.Data).map((key) => {
+          const { id, symbol } = response.Data[key];
+          return { name: symbol, id };
+        });
+      }, 500);
+    },
+    searchCoin() {
+      console.log("searchCoin :>> ", this.ticker);
+      this.matchesFound = [];
+      this.matchesFound = this.listAvailableCoins
+        .filter((coin) => coin.name.startsWith(this.ticker))
+        .slice(0, 4);
+      console.log("this.matchesFound :>> ", this.matchesFound);
+    },
+  },
+  watch: {
+    ticker() {
+      this.searchCoin();
+    },
+  },
+  created() {
+    this.loadAvailableCoins();
   },
 };
 </script>
