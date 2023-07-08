@@ -34,7 +34,8 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="ticker"
-                @keydown.enter="add"
+                @keydown.enter="addCoin"
+                @input="valid = true"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -46,16 +47,19 @@
               <button
                 v-for="coin in matchesFound"
                 :key="coin.id"
+                @click="selectCoin(coin)"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
                 {{ coin.name }}
               </button>
             </div>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-if="!valid" class="text-sm text-red-600">
+              {{ validMessage }}
+            </div>
           </div>
         </div>
         <button
-          @click="add"
+          @click="addCoin"
           type="button"
           class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
         >
@@ -174,6 +178,8 @@ export default {
       graf: [],
       listAvailableCoins: [],
       matchesFound: [],
+      valid: true,
+      validMessage: "",
       API_KEY:
         "c5830f5e427fa14670e0d35f1fd17a70a42551bac738247d2bb81ed27a20b5ae",
     };
@@ -185,12 +191,12 @@ export default {
         price: "- -",
       };
       this.tickers.push(currentTicker);
+      this.ticker = "";
       setInterval(async () => {
         const f = await fetch(
           `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=${this.API_KEY}`
         );
         const data = await f.json();
-        // console.log(data);
         this.tickers.find((t) => t.name === currentTicker.name).price =
           data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
         if (this.sel?.name === currentTicker.name) {
@@ -198,8 +204,15 @@ export default {
           console.log(data.USD);
         }
       }, 3000);
-
-      this.ticker = "";
+    },
+    addCoin() {
+      this.validationEmpty();
+      if (this.valid) {
+        this.validationExist();
+        if (this.valid) {
+          this.add();
+        }
+      }
     },
     handleDelete(tikerToRemove) {
       this.tickers = this.tickers.filter((t) => t !== tikerToRemove);
@@ -228,16 +241,40 @@ export default {
       }, 500);
     },
     searchCoin() {
-      console.log("searchCoin :>> ", this.ticker);
       this.matchesFound = [];
-      this.matchesFound = this.listAvailableCoins
-        .filter((coin) => coin.name.startsWith(this.ticker))
-        .slice(0, 4);
-      console.log("this.matchesFound :>> ", this.matchesFound);
+      if (this.ticker) {
+        this.matchesFound = this.listAvailableCoins
+          .filter((coin) => coin.name.startsWith(this.ticker))
+          .slice(0, 4);
+      }
+    },
+    selectCoin(coin) {
+      this.ticker = coin.name;
+      this.validationDuble();
+      if (this.valid) {
+        this.add();
+      }
+    },
+    validationDuble() {
+      this.valid = !this.tickers.find((t) => t.name === this.ticker);
+      this.validMessage = "Такой тикер уже добавлен";
+    },
+    validationEmpty() {
+      if (!this.ticker) {
+        this.valid = false;
+        this.validMessage = "Невозможно добавить пустой тикер";
+      }
+    },
+    validationExist() {
+      this.valid = this.listAvailableCoins.find((t) => t.name === this.ticker);
+      if (!this.valid) {
+        this.validMessage = "Такой тикер не существует";
+      }
     },
   },
   watch: {
     ticker() {
+      this.ticker = this.ticker.toUpperCase();
       this.searchCoin();
     },
   },
